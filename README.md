@@ -28,6 +28,71 @@ $app->register(Illuminate\Foundation\Providers\FormRequestServiceProvider::class
 
 Let's continue the official [Laravel's documantation](https://laravel.com/docs/7.x/validation).
 
+## Format Validation
+
+If you want to format the verification messages, follow these steps:
+
+Firstly import the `ValidationException` class:
+
+```php
+use Illuminate\Validation\ValidationException;
+```
+
+Add (if need) the `dontReport` list:
+
+```php
+/**
+ * A list of the exception types that should not be reported.
+ *
+ * @var array
+ */
+protected $dontReport = [
+    // ...
+    ValidationException::class,
+];
+```
+
+And finally update the `render` method:
+
+```php
+/**
+ * Render an exception into an HTTP response.
+ *
+ * @param  \Illuminate\Http\Request  $request
+ * @param  \Throwable  $exception
+ * @return \Symfony\Component\HttpFoundation\Response
+ *
+ * @throws \Throwable
+ */
+public function render($request, Throwable $exception)
+{
+    if ($exception instanceof ValidationException) {
+        return $this->convertValidationExceptionToResponse($exception, $request);
+    }
+
+    return parent::render($request, $exception);
+}
+
+/**
+ * Create a response object from the given validation exception.
+ *
+ * @param  \Illuminate\Validation\ValidationException  $e
+ * @param  \Illuminate\Http\Request  $request
+ * @return \Symfony\Component\HttpFoundation\Response
+ */
+protected function convertValidationExceptionToResponse(ValidationException $e, $request)
+{
+    if ($e->response) {
+        return $e->response;
+    }
+
+    return response()->json([
+        'message' => $e->getMessage(),
+        'errors' => $e->errors(),
+    ], $e->status);
+}
+```
+
 ## License
 
 This package is licensed under [The MIT License (MIT)](LICENSE).
